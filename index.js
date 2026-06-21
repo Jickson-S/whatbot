@@ -4,7 +4,6 @@ const qrcode = require('qrcode-terminal');
 const client = new Client({
     puppeteer: {
         headless: true,
-        executablePath: process.env.CHROME_BIN || '/usr/bin/google-chrome-stable',
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
@@ -13,6 +12,8 @@ const client = new Client({
         ]
     }
 });
+
+
 client.on('qr', (qr) => {
     console.log('Scan this QR code:');
     qrcode.generate(qr, { small: true });
