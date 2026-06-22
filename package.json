@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "start": "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false node index.js"
+    "start": "node index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
     "puppeteer": "^25.1.0",
     "puppeteer-core": "^25.1.0",
