@@ -1,6 +1,7 @@
 import qrcode from 'qrcode-terminal'
 import whatsappweb from 'whatsapp-web.js'
 const { Client, LocalAuth } = whatsappweb
+
 const client = new Client({
     authStrategy: new LocalAuth({ dataPath: '.auth' }),
     restartOnAuthFail: true,
