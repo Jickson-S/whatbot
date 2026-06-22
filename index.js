@@ -1,3 +1,8 @@
+import express from 'express';
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
 import qrcode from 'qrcode-terminal'
 import whatsappweb from 'whatsapp-web.js'
 const { Client, LocalAuth } = whatsappweb
@@ -53,6 +58,14 @@ client.on('message', async (message) => {
     if (message.body.toLowerCase() === 'time') {
         message.reply('Current time: ' + new Date().toLocaleString());
     }
+});
+
+app.get('/', (req, res) => {
+    res.send('WhatsApp bot is running');
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
 });
 
 client.initialize();
