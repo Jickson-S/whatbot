@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>whatbot - WhatsApp Dashboard</title>
+    <!-- Modern Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- QR Code Generator Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #080710;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            
+            /* Status Colors */
+            --color-initializing: #eab308; /* Amber */
+            --color-qr: #3b82f6; /* Blue */
+            --color-connected: #10b981; /* Emerald */
+            --color-disconnected: #f43f5e; /* Rose */
+            
+            --glow-initializing: rgba(234, 179, 8, 0.15);
+            --glow-qr: rgba(59, 130, 246, 0.15);
+            --glow-connected: rgba(16, 185, 129, 0.2);
+            --glow-disconnected: rgba(244, 63, 94, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Deep Glowing Background Blobs */
+        .bg-glow-1 {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(0,0,0,0) 70%);
+            top: -100px;
+            left: -100px;
+            z-index: -1;
+            filter: blur(40px);
+        }
+
+        .bg-glow-2 {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(236, 72, 153, 0.1) 0%, rgba(0,0,0,0) 70%);
+            bottom: -150px;
+            right: -150px;
+            z-index: -1;
+            filter: blur(50px);
+        }
+
+        /* Glass Dashboard Container */
+        .dashboard-container {
+            width: 90%;
+            max-width: 480px;
+            padding: 40px 30px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Premium Brand Header */
+        header {
+            margin-bottom: 32px;
+        }
+
+        .brand-name {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #f472b6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+            margin-bottom: 6px;
+        }
+
+        .brand-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        /* Status Badge */
+        .status-badge-container {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            margin-bottom: 24px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .pulse {
+            animation: pulse-animation 2s infinite;
+        }
+
+        @keyframes pulse-animation {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 currentColor;
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 8px rgba(0, 0, 0, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+            }
+        }
+
+        /* Content Sections */
+        .content-section {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        .content-section.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Loading Spinner */
+        .spinner-wrapper {
+            margin: 20px 0;
+            position: relative;
+            width: 100px;
+            height: 100px;
+        }
+
+        .spinner-outer {
+            width: 100%;
+            height: 100%;
+            border: 3px solid transparent;
+            border-top-color: var(--color-initializing);
+            border-bottom-color: var(--color-initializing);
+            border-radius: 50%;
+            animation: spin 1.5s linear infinite;
+        }
+
+        .spinner-inner {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            width: 70px;
+            height: 70px;
+            border: 3px solid transparent;
+            border-left-color: #f59e0b;
+            border-right-color: #f59e0b;
+            border-radius: 50%;
+            animation: spin-reverse 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes spin-reverse {
+            to { transform: rotate(-360deg); }
+        }
+
+        /* QR Code Container with scan lines */
+        .qr-card {
+            background: #ffffff;
+            padding: 16px;
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+            width: 260px;
+            height: 260px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #qr-canvas {
+            display: block;
+            width: 228px;
+            height: 228px;
+        }
+
+        /* Neon QR Scan Line Animation */
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0) 0%, rgba(59, 130, 246, 0.8) 50%, rgba(59, 130, 246, 0) 100%);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
+            animation: scan 3s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes scan {
+            0% { top: 0%; }
+            50% { top: 100%; }
+            100% { top: 0%; }
+        }
+
+        /* Description Texts */
+        .description-text {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .guide-steps {
+            text-align: left;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            padding: 16px 20px;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .guide-steps ol {
+            padding-left: 20px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .guide-steps li {
+            margin-bottom: 8px;
+        }
+
+        .guide-steps li strong {
+            color: var(--text-primary);
+        }
+
+        /* Connected Success View */
+        .success-icon-wrapper {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin: 20px 0 30px;
+        }
+
+        .success-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(16, 185, 129, 0.1);
+            border: 2px solid var(--color-connected);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .success-checkmark {
+            font-size: 2.2rem;
+            color: var(--color-connected);
+            font-weight: bold;
+            animation: popIn 0.6s 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+        }
+
+        .success-pulse {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid var(--color-connected);
+            opacity: 0;
+            animation: success-pulse-animation 2s infinite;
+        }
+
+        @keyframes success-pulse-animation {
+            0% {
+                transform: scale(1);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(1.4);
+                opacity: 0;
+            }
+        }
+
+        @keyframes scaleIn {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        /* Stats Card in Success state */
+        .stats-grid {
+            width: 100%;
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 16px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            text-align: left;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+        }
+
+        .stat-val {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .badge-listener {
+            background: rgba(129, 140, 248, 0.15);
+            color: #818cf8;
+            padding: 2px 8px;
+            border-radius: 6px;
+            margin-left: 4px;
+            font-size: 0.75rem;
+            display: inline-block;
+        }
+
+        /* Footer info */
+        footer {
+            margin-top: 30px;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.25);
+            letter-spacing: 0.5px;
+        }
+
+        /* Responsive scaling */
+        @media (max-width: 480px) {
+            .dashboard-container {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-glow-1"></div>
+    <div class="bg-glow-2"></div>
+
+    <div class="dashboard-container">
+        <header>
+            <h1 class="brand-name">whatbot</h1>
+            <p class="brand-subtitle">WhatsApp API Gateway & Server</p>
+        </header>
+
+        <!-- Dynamic Status Badge -->
+        <div class="status-badge-container" id="status-badge-box">
+            <span class="status-dot pulse" id="status-dot"></span>
+            <span id="status-text">INITIALIZING</span>
+        </div>
+
+        <!-- STATE 1: INITIALIZING -->
+        <div class="content-section active" id="sec-initializing">
+            <div class="spinner-wrapper">
+                <div class="spinner-outer"></div>
+                <div class="spinner-inner"></div>
+            </div>
+            <p class="description-text">Connecting to the browser engine and preparing the WhatsApp runtime environment. This might take a few moments...</p>
+        </div>
+
+        <!-- STATE 2: QR_READY -->
+        <div class="content-section" id="sec-qr">
+            <p class="description-text">Your bot is ready for linking! Scan the QR code below using your WhatsApp client.</p>
+            
+            <div class="qr-card">
+                <canvas id="qr-canvas"></canvas>
+                <div class="scan-line"></div>
+            </div>
+
+            <div class="guide-steps">
+                <ol>
+                    <li>Open <strong>WhatsApp</strong> on your mobile phone.</li>
+                    <li>Tap the <strong>Menu</strong> (Android) or <strong>Settings</strong> (iOS).</li>
+                    <li>Select <strong>Linked Devices</strong>.</li>
+                    <li>Tap <strong>Link a Device</strong> and point your camera here.</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- STATE 3: CONNECTED -->
+        <div class="content-section" id="sec-connected">
+            <div class="success-icon-wrapper">
+                <div class="success-circle">
+                    <span class="success-checkmark">✓</span>
+                </div>
+                <div class="success-pulse"></div>
+            </div>
+            
+            <p class="description-text">The bot is authenticated and online. It is currently monitoring chat messages and will auto-respond in real-time.</p>
+
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <span class="stat-label">Gateway Status</span>
+                    <span class="stat-val" style="color: var(--color-connected);">ACTIVE</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Active Listeners</span>
+                    <span class="stat-val">
+                        <span class="badge-listener">hi</span>
+                        <span class="badge-listener">ping</span>
+                        <span class="badge-listener">time</span>
+                    </span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Local Auth Storage</span>
+                    <span class="stat-val" style="color: #60a5fa;">.auth/ (Enabled)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- STATE 4: DISCONNECTED -->
+        <div class="content-section" id="sec-disconnected">
+            <div class="success-icon-wrapper" style="margin: 20px 0 20px;">
+                <div class="success-circle" style="border-color: var(--color-disconnected); background: rgba(244, 63, 94, 0.05);">
+                    <span class="success-checkmark" style="color: var(--color-disconnected);">✕</span>
+                </div>
+            </div>
+            <p class="description-text" style="margin-bottom: 10px;">The WhatsApp session has been disconnected or failed to authenticate.</p>
+            <p class="description-text" style="font-size: 0.85rem;">Please check the server console logs for exact error details or restart the application to retry linking.</p>
+        </div>
+    </div>
+
+    <footer>
+        whatsapp-web.js engine v1.34.7
+    </footer>
+
+    <script>
+        let currentStatus = '';
+        let lastQrData = '';
+
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        const statusBadgeBox = document.getElementById('status-badge-box');
+
+        const secInitializing = document.getElementById('sec-initializing');
+        const secQr = document.getElementById('sec-qr');
+        const secConnected = document.getElementById('sec-connected');
+        const secDisconnected = document.getElementById('sec-disconnected');
+
+        const qrCanvas = document.getElementById('qr-canvas');
+
+        // Apply status-specific colors and glow
+        function updateStatusBadge(status) {
+            statusText.innerText = status.replace('_', ' ');
+            
+            // Clear prior status color classes
+            statusDot.style.backgroundColor = '';
+            statusBadgeBox.style.boxShadow = '';
+            statusBadgeBox.style.color = '';
+            statusDot.style.color = '';
+
+            let targetColor = '';
+            let targetGlow = '';
+
+            switch (status) {
+                case 'INITIALIZING':
+                    targetColor = 'var(--color-initializing)';
+                    targetGlow = '0 0 12px var(--glow-initializing)';
+                    break;
+                case 'QR_READY':
+                    targetColor = 'var(--color-qr)';
+                    targetGlow = '0 0 12px var(--glow-qr)';
+                    break;
+                case 'CONNECTED':
+                    targetColor = 'var(--color-connected)';
+                    targetGlow = '0 0 12px var(--glow-connected)';
+                    break;
+                case 'DISCONNECTED':
+                    targetColor = 'var(--color-disconnected)';
+                    targetGlow = '0 0 12px var(--glow-disconnected)';
+                    break;
+            }
+
+            statusDot.style.backgroundColor = targetColor;
+            statusDot.style.color = targetColor;
+            statusBadgeBox.style.color = targetColor;
+            statusBadgeBox.style.borderColor = targetColor + '22'; // low opacity border
+            statusBadgeBox.style.boxShadow = targetGlow;
+        }
+
+        // Handle swapping content containers
+        function showSection(sectionId) {
+            const sections = [secInitializing, secQr, secConnected, secDisconnected];
+            sections.forEach(sec => {
+                if (sec.id === sectionId) {
+                    sec.classList.add('active');
+                } else {
+                    sec.classList.remove('active');
+                }
+            });
+        }
+
+        // Render QR Code onto the canvas
+        function renderQrCode(qrData) {
+            if (!qrData) return;
+            QRCode.toCanvas(qrCanvas, qrData, {
+                width: 228,
+                margin: 0,
+                color: {
+                    dark: '#0f172a',
+                    light: '#ffffff'
+                }
+            }, function (error) {
+                if (error) {
+                    console.error('Error rendering QR code canvas:', error);
+                }
+            });
+        }
+
+        // Poll status API endpoint
+        async function checkStatus() {
+            try {
+                const response = await fetch('/api/status');
+                if (!response.ok) {
+                    throw new Error(`HTTP Error Status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                if (data.status !== currentStatus) {
+                    currentStatus = data.status;
+                    updateStatusBadge(currentStatus);
+
+                    switch (currentStatus) {
+                        case 'INITIALIZING':
+                            showSection('sec-initializing');
+                            break;
+                        case 'QR_READY':
+                            showSection('sec-qr');
+                            if (data.qr) {
+                                lastQrData = data.qr;
+                                renderQrCode(data.qr);
+                            }
+                            break;
+                        case 'CONNECTED':
+                            showSection('sec-connected');
+                            break;
+                        case 'DISCONNECTED':
+                            showSection('sec-disconnected');
+                            break;
+                    }
+                } else if (currentStatus === 'QR_READY' && data.qr && data.qr !== lastQrData) {
+                    // Update QR code if payload changed while in QR_READY status
+                    lastQrData = data.qr;
+                    renderQrCode(data.qr);
+                }
+
+            } catch (err) {
+                console.error('Failed to poll status API:', err);
+                // If API polling completely fails (e.g. server is down/restarting), fallback to DISCONNECTED style
+                if (currentStatus !== 'SERVER_UNAVAILABLE') {
+                    currentStatus = 'SERVER_UNAVAILABLE';
+                    updateStatusBadge('DISCONNECTED');
+                    showSection('sec-disconnected');
+                }
+            }
+        }
+
+        // Run status check immediately, then poll every 2 seconds
+        checkStatus();
+        setInterval(checkStatus, 2000);
+    </script>
+</body>
+</html>
