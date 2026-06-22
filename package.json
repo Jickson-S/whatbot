@@ -5,7 +5,9 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "postinstall": "PUPPETEER_CACHE_DIR=puppeteer_cache npx puppeteer browsers install chrome"
   },
   "keywords": [],
   "author": "",
