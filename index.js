@@ -2,20 +2,30 @@ import qrcode from 'qrcode-terminal'
 import whatsappweb from 'whatsapp-web.js'
 const { Client, LocalAuth } = whatsappweb
 const client = new Client({
-  authStrategy: new LocalAuth({ dataPath: '.auth' }),
-  restartOnAuthFail: true,
-  puppeteer: {
-    headless: true,
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-accelerated-2d-canvas',
-      '--no-first-run',
-      '--no-zygote',
-      '--disable-gpu'
-    ]
-  }
+    authStrategy: new LocalAuth({ dataPath: '.auth' }),
+    restartOnAuthFail: true,
+    puppeteer: {
+        headless: true,
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--disable-gpu',
+            '--disable-extensions',
+            '--disable-background-networking',
+            '--disable-default-apps',
+            '--disable-sync',
+            '--disable-translate',
+            '--metrics-recording-only',
+            '--mute-audio',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding',
+            '--single-process'
+        ]
+    }
 })
 
 client.on('qr', (qr) => {
